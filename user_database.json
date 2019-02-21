@@ -1,0 +1,18 @@
+{
+        "alex": {
+                "song_data": [
+                        "4OMu5a8sFpcRCPCcsoEaov",
+                        "63T7DJ1AFDD6Bn8VzG6JE8",
+                        "2wvMC5EyaaYQwBfiwwY2xE"
+                ],
+                "playlist_data": "some playlists"
+        },
+        "tanner": {
+                "song_data": "Nothing",
+                "playlist_data": "playlist playlist"
+        },
+        "heather": {
+                "song_data": "Nothing",
+                "playlist_data": "Nothing"
+        }
+}
