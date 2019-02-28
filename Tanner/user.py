@@ -7,16 +7,6 @@ import json
 from spotipy import util
 
 
-# Keep this user data in a diffrent location, currently here for testing
-'''
-user_info = {'client_id': 'a0a2e7215e7240a687305ee86b6147f6',
-             'client_secret': '126c1d67b439435181535bdb652a0cd7',
-             'redirect_uri': 'http://localhost:8888/callback/',
-             'username': 'alexthomastilley',
-             'scope': 'user-read-recently-played playlist-modify-public'
-             }
-'''
-
 # work around to use 'current_user_recently_played' since spotipy doesnt support anymore?
 # currently don't understand code- check google bookmark
 # see similar comment below
@@ -203,10 +193,14 @@ class User:
                 self.username, playlist_id, new_track_ids, position)
             return True
 
-    def update_recently_played_tracks_playlist(self, limit_total=True, max_length=50):
+    def build_friend_recent_playlist(self, friend, playlist_name):
+        track_ids = self.get_user_track_data(friend)
+        if self.create_playlist(playlist_name):
+            self.add_tracks_to_playlist_with_name(playlist_name, track_ids, dedupe=True)
 
-        recent_track_ids = self.get_recently_listened_to_track_ids(amount=15)
-        playlist_ids = self.get_track_ids_from_playlist_with_name('Recent Tracks')
+    def update_friend_playlist_with_tracks(self, friend, playlist_name, limit_total=True, max_length=50):
+        recent_track_ids = self.get_user_track_data(friend)[:15]
+        playlist_ids = self.get_track_ids_from_playlist_with_name(playlist_name)
 
         filtered_tracks = []
         for id in recent_track_ids:
@@ -219,16 +213,16 @@ class User:
         available_playlist_space = max_length - playlist_len
 
         if len(filtered_tracks) == max_length:
-            playlist_id = self.get_playlist_id_with_name('Recent Tracks')
+            playlist_id = self.get_playlist_id_with_name(playlist_name)
             self.user_playlist_replace_tracks(self.username, playlist_id, recent_track_ids)
 
         if available_playlist_space < len(filtered_tracks):
             remove_range = len(filtered_tracks)
-            self.remove_tracks_from_playlist_with_name('Recent Tracks',
+            self.remove_tracks_from_playlist_with_name(playlist_name,
                                                        len_list[-remove_range:]
                                                        )
 
-        self.add_tracks_to_playlist_with_name('Recent Tracks', filtered_tracks)
+        self.add_tracks_to_playlist_with_name(playlist_name, filtered_tracks)
 
     ############################- Data Sharing -#############################################
 
@@ -256,9 +250,9 @@ class User:
         if type in data[user].keys():
             return data[user][type]
 
-    def get_user_song_data(self, user):
-        song_data = self.get_user_data(user, 'song_data')
-        return song_data
+    def get_user_track_data(self, user):
+        track_data = self.get_user_data(user, 'track_data')
+        return track_data
 
     def get_user_playlist_data(self, user):
         playlist_data = self.get_user_data(user, 'playlist_data')
@@ -266,3 +260,32 @@ class User:
 
 # share_data(alex_playlists, 'playlist_data', 'alex')
 # print(get_user_playlist_data('alex'))
+
+##########################################################################################
+
+    def update_recently_played_tracks_playlist(self, limit_total=True, max_length=50):
+
+        recent_track_ids = self.get_recently_listened_to_track_ids(amount=15)
+        playlist_ids = self.get_track_ids_from_playlist_with_name('Recent Tracks')
+
+        filtered_tracks = []
+        for id in recent_track_ids:
+            if id not in playlist_ids:
+                filtered_tracks.append(id)
+
+        playlist_len = len(playlist_ids)
+        len_list = list(range(1, playlist_len + 1))
+
+        available_playlist_space = max_length - playlist_len
+
+        if len(filtered_tracks) == max_length:
+            playlist_id = self.get_playlist_id_with_name('Recent Tracks')
+            self.user_playlist_replace_tracks(self.username, playlist_id, recent_track_ids)
+
+        if available_playlist_space < len(filtered_tracks):
+            remove_range = len(filtered_tracks)
+            self.remove_tracks_from_playlist_with_name('Recent Tracks',
+                                                       len_list[-remove_range:]
+                                                       )
+
+        self.add_tracks_to_playlist_with_name('Recent Tracks', filtered_tracks)
