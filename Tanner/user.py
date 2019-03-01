@@ -121,13 +121,17 @@ class User:
             if item['name'] == name:
                 return item['id']
 
-    def create_recently_listened_to_playlist(self):
-        # Add parameter for track limit
-        if self.create_playlist('Recent Tracks'):
-            track_data = self.get_recently_played_tracks_data()
-            track_ids = self.get_track_ids_from_data(track_data)
-            playlist_id = self.get_playlist_id('Recent Tracks')
-            self.spotify.user_playlist_add_tracks(self.username, playlist_id, track_ids)
+    def create_recently_listened_to_playlist(self, playlist_name='Recent Tracks', from_friend=None):
+        if from_friend:
+            track_ids = self.get_user_track_data(from_friend)
+            if self.create_playlist(playlist_name):
+                self.add_tracks_to_playlist_with_name(playlist_name, track_ids, dedupe=True)
+        else:
+            if self.create_playlist(playlist_name):
+                track_data = self.get_recently_played_tracks_data()
+                track_ids = self.get_track_ids_from_data(track_data)
+                playlist_id = self.get_playlist_id(playlist_name)
+                self.spotify.user_playlist_add_tracks(self.username, playlist_id, track_ids)
 
     def get_recently_listened_to_track_ids(self, amount=50, dedupe=True):
         # dedupe takes True or False- returns duplicates if False
@@ -193,28 +197,31 @@ class User:
                 self.username, playlist_id, new_track_ids, position)
             return True
 
-    def build_friend_recent_playlist(self, friend, playlist_name):
-        track_ids = self.get_user_track_data(friend)
-        if self.create_playlist(playlist_name):
-            self.add_tracks_to_playlist_with_name(playlist_name, track_ids, dedupe=True)
+    def update_playlist_with_tracks(self, playlist_name, from_friend=None, amount=15, max_length=50):
+        if from_friend:
+            recent_track_ids = self.get_user_track_data(from_friend)[:amount]
+        else:
+            recent_track_ids = self.get_recently_listened_to_track_ids(amount=amount)
 
-    def update_friend_playlist_with_tracks(self, friend, playlist_name, limit_total=True, max_length=50):
-        recent_track_ids = self.get_user_track_data(friend)[:15]
-        playlist_ids = self.get_track_ids_from_playlist_with_name(playlist_name)
+        current_ids = self.get_track_ids_from_playlist_with_name(playlist_name)
 
         filtered_tracks = []
         for id in recent_track_ids:
-            if id not in playlist_ids:
+            if id not in current_ids:
                 filtered_tracks.append(id)
 
-        playlist_len = len(playlist_ids)
+        playlist_len = len(current_ids)
         len_list = list(range(1, playlist_len + 1))
 
         available_playlist_space = max_length - playlist_len
 
-        if len(filtered_tracks) == max_length:
-            playlist_id = self.get_playlist_id_with_name(playlist_name)
-            self.user_playlist_replace_tracks(self.username, playlist_id, recent_track_ids)
+        print("Filtered_tracks: {}\n".format(filtered_tracks))
+        print("Available playlist space: {}\n".format(available_playlist_space))
+        print("Playlist length: {}\n".format(playlist_len))
+
+        if len(filtered_tracks) == max_length or playlist_len > max_length:
+            playlist_id = self.get_playlist_id(playlist_name)
+            self.spotify.user_playlist_replace_tracks(self.username, playlist_id, recent_track_ids)
 
         if available_playlist_space < len(filtered_tracks):
             remove_range = len(filtered_tracks)
@@ -225,11 +232,6 @@ class User:
         self.add_tracks_to_playlist_with_name(playlist_name, filtered_tracks)
 
     ############################- Data Sharing -#############################################
-
-    # alex_songs = ['some songs and shit']
-    # alex_playlists = ['some playlist']
-    # tanner_songs = ['songs songs songs']
-    # tanner_playlists = ['playlist playlist']
 
     def get_data_from_database(self):
         with open(self.database_location, 'r') as database:
@@ -251,41 +253,10 @@ class User:
             return data[user][type]
 
     def get_user_track_data(self, user):
+        # This currently returns track id's check database.json
         track_data = self.get_user_data(user, 'track_data')
         return track_data
 
     def get_user_playlist_data(self, user):
         playlist_data = self.get_user_data(user, 'playlist_data')
         return playlist_data
-
-# share_data(alex_playlists, 'playlist_data', 'alex')
-# print(get_user_playlist_data('alex'))
-
-##########################################################################################
-
-    def update_recently_played_tracks_playlist(self, limit_total=True, max_length=50):
-
-        recent_track_ids = self.get_recently_listened_to_track_ids(amount=15)
-        playlist_ids = self.get_track_ids_from_playlist_with_name('Recent Tracks')
-
-        filtered_tracks = []
-        for id in recent_track_ids:
-            if id not in playlist_ids:
-                filtered_tracks.append(id)
-
-        playlist_len = len(playlist_ids)
-        len_list = list(range(1, playlist_len + 1))
-
-        available_playlist_space = max_length - playlist_len
-
-        if len(filtered_tracks) == max_length:
-            playlist_id = self.get_playlist_id_with_name('Recent Tracks')
-            self.user_playlist_replace_tracks(self.username, playlist_id, recent_track_ids)
-
-        if available_playlist_space < len(filtered_tracks):
-            remove_range = len(filtered_tracks)
-            self.remove_tracks_from_playlist_with_name('Recent Tracks',
-                                                       len_list[-remove_range:]
-                                                       )
-
-        self.add_tracks_to_playlist_with_name('Recent Tracks', filtered_tracks)
