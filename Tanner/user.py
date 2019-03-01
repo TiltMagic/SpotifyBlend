@@ -166,7 +166,7 @@ class User:
             tracks_to_remove.append(playlist_objects[location - 1])
         print('\n')
         print("tracks removed:\n{}".format(tracks_to_remove))
-        print(len(tracks_to_remove))
+        print("{} tracks removed\n".format(len(tracks_to_remove)))
 
         self.spotify.user_playlist_remove_specific_occurrences_of_tracks(
             self.username, playlist_id, tracks_to_remove)
@@ -215,9 +215,10 @@ class User:
 
         available_playlist_space = max_length - playlist_len
 
+        print("Playlist Name: {}".format(playlist_name))
         print("Filtered_tracks: {}\n".format(filtered_tracks))
-        print("Available playlist space: {}\n".format(available_playlist_space))
-        print("Playlist length: {}\n".format(playlist_len))
+        print("Available playlist space: {}".format(available_playlist_space))
+        print("Playlist length: {}".format(playlist_len))
 
         if len(filtered_tracks) == max_length or playlist_len > max_length:
             playlist_id = self.get_playlist_id(playlist_name)
@@ -230,7 +231,9 @@ class User:
                                                        )
 
         self.add_tracks_to_playlist_with_name(playlist_name, filtered_tracks)
-
+        print("Tracks added: {}".format(filtered_tracks))
+        print("{} tracks added".format(len(filtered_tracks)))
+        print("**************************************")
     ############################- Data Sharing -#############################################
 
     def get_data_from_database(self):
@@ -246,6 +249,10 @@ class User:
             with open(self.database_location, 'w') as database:
                 new_data = json.dumps(data, indent=8)
                 database.write(new_data)
+
+    def share_recent_track_ids(self, user):
+        track_ids = self.get_recently_listened_to_track_ids()
+        self.share_data(track_ids, 'track_data', user)
 
     def get_user_data(self, user, type):
         data = self.get_data_from_database()

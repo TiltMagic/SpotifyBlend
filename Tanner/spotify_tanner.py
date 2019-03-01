@@ -17,29 +17,21 @@ tanner_info = {'client_id': '9351c95c17f942e78772701d88773cb0',
                }
 
 tanner = User(**tanner_info)
-tanner.build_friend_recent_playlist('alex', 'Alex Recents')
+tanner.create_playlist("Alex's Recents")
+tanner.create_playlist("Fewchaboi's Recents")
 
 
 def main_updater():
     tanner.setup()
+    tanner.share_recent_track_ids('tanner')
 
-    track_data = tanner.get_recently_played_tracks_data()
-    track_ids = tanner.get_track_ids_from_data(track_data)
-    tanner.share_data(track_ids, 'track_data', 'tanner')
+    tanner.update_playlist_with_tracks(
+        "Alex's Recents", from_friend='alex', amount=3, max_length=15)
 
-    tanner.update_friend_playlist_with_tracks('alex', 'Alex Recents')
+    tanner.update_playlist_with_tracks("Fewchaboi's Recents", max_length=15)
 
 
-schedule.every(3).minutes.do(main_updater)
+schedule.every(1).minutes.do(main_updater)
 
 while True:
     schedule.run_pending()
-
-# def main():
-#     tanner.setup()
-#     track_data = tanner.get_recently_played_tracks_data()
-#     track_ids = tanner.get_track_ids_from_data(track_data)[:3]
-#     # tanner.share_data(track_ids, 'song_data', 'tanner')
-#     # self.share_data(track_ids, 'song_data', 'tanner')
-#     self.show_recently_played_tracks(5)
-#     self.update_recently_played_tracks_playlist()
