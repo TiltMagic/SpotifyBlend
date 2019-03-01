@@ -197,43 +197,47 @@ class User:
                 self.username, playlist_id, new_track_ids, position)
             return True
 
-    def update_playlist_with_tracks(self, playlist_name, from_friend=None, amount=15, max_length=50):
-        if from_friend:
-            recent_track_ids = self.get_user_track_data(from_friend)[:amount]
+    def update_playlist_with_recent_tracks(self, playlist_name, from_friend=None, amount=15, max_length=50):
+        if playlist_name in self.get_playlist_data(just_titles=True):
+            if from_friend:
+                recent_track_ids = self.get_user_track_data(from_friend)[:amount]
+            else:
+                recent_track_ids = self.get_recently_listened_to_track_ids(amount=amount)
+
+            current_ids = self.get_track_ids_from_playlist_with_name(playlist_name)
+
+            filtered_tracks = []
+            for id in recent_track_ids:
+                if id not in current_ids:
+                    filtered_tracks.append(id)
+
+            playlist_len = len(current_ids)
+            len_list = list(range(1, playlist_len + 1))
+
+            available_playlist_space = max_length - playlist_len
+
+            print("Playlist Name: {}".format(playlist_name))
+            print("Filtered_tracks: {}\n".format(filtered_tracks))
+            print("Available playlist space: {}".format(available_playlist_space))
+            print("Playlist length: {}".format(playlist_len))
+
+            if len(filtered_tracks) == max_length or playlist_len > max_length:
+                playlist_id = self.get_playlist_id(playlist_name)
+                self.spotify.user_playlist_replace_tracks(
+                    self.username, playlist_id, recent_track_ids)
+
+            if available_playlist_space < len(filtered_tracks):
+                remove_range = len(filtered_tracks)
+                self.remove_tracks_from_playlist_with_name(playlist_name,
+                                                           len_list[-remove_range:]
+                                                           )
+
+            self.add_tracks_to_playlist_with_name(playlist_name, filtered_tracks)
+            print("Tracks added: {}".format(filtered_tracks))
+            print("{} tracks added".format(len(filtered_tracks)))
+            print("**************************************")
         else:
-            recent_track_ids = self.get_recently_listened_to_track_ids(amount=amount)
-
-        current_ids = self.get_track_ids_from_playlist_with_name(playlist_name)
-
-        filtered_tracks = []
-        for id in recent_track_ids:
-            if id not in current_ids:
-                filtered_tracks.append(id)
-
-        playlist_len = len(current_ids)
-        len_list = list(range(1, playlist_len + 1))
-
-        available_playlist_space = max_length - playlist_len
-
-        print("Playlist Name: {}".format(playlist_name))
-        print("Filtered_tracks: {}\n".format(filtered_tracks))
-        print("Available playlist space: {}".format(available_playlist_space))
-        print("Playlist length: {}".format(playlist_len))
-
-        if len(filtered_tracks) == max_length or playlist_len > max_length:
-            playlist_id = self.get_playlist_id(playlist_name)
-            self.spotify.user_playlist_replace_tracks(self.username, playlist_id, recent_track_ids)
-
-        if available_playlist_space < len(filtered_tracks):
-            remove_range = len(filtered_tracks)
-            self.remove_tracks_from_playlist_with_name(playlist_name,
-                                                       len_list[-remove_range:]
-                                                       )
-
-        self.add_tracks_to_playlist_with_name(playlist_name, filtered_tracks)
-        print("Tracks added: {}".format(filtered_tracks))
-        print("{} tracks added".format(len(filtered_tracks)))
-        print("**************************************")
+            print("Playlist {} not found".format(playlist_name))
     ############################- Data Sharing -#############################################
 
     def get_data_from_database(self):

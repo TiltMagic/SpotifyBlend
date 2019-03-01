@@ -25,10 +25,10 @@ def main_updater():
     tanner.setup()
     tanner.share_recent_track_ids('tanner')
 
-    tanner.update_playlist_with_tracks(
+    tanner.update_playlist_with_recent_tracks(
         "Alex's Recents", from_friend='alex', amount=3, max_length=15)
 
-    tanner.update_playlist_with_tracks("Fewchaboi's Recents", max_length=15)
+    tanner.update_playlist_with_recent_tracks("Fewchaboi's Recents", max_length=15)
 
 
 schedule.every(1).minutes.do(main_updater)
